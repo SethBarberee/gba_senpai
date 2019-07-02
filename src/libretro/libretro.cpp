@@ -7,11 +7,41 @@
 
 #include "libretro/libretro.h"
 
-constexpr int CYCLES_PER_FRAME = 30000;
+constexpr int CYCLES_PER_FRAME = 280896;
 // TODO maybe move this elsewhere?
 const int FRAME_WIDTH = 240;
 const int FRAME_HEIGHT = 160;
 unsigned long cycles_per_frame = CYCLES_PER_FRAME;
+
+// Generously taken from VBA-M
+static const struct retro_controller_description port_gba[] = {
+    { "GBA Joypad", RETRO_DEVICE_JOYPAD },
+    { NULL, 0 },
+};
+
+static const struct retro_controller_info ports_gba[] = {
+    { port_gba, 1 },
+    { NULL, 0 },
+};
+
+static struct retro_input_descriptor input_gba[] = {
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "D-Pad Up" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,  "B" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,  "A" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,  "L" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,  "R" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,  "Turbo B" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,  "Turbo A" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Select" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START, "Start" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "Solar Sensor (Darker)" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "Solar Sensor (Lighter)" },
+    { 0, 0, 0, 0, NULL },
+};
+
 
 // Callbacks
 static retro_log_printf_t log_cb;
@@ -32,6 +62,8 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 // Load a cartridge
 bool retro_load_game(const struct retro_game_info *info)
 {
+    environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports_gba);
+    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, input_gba);
     return true;
 }
 
@@ -86,6 +118,7 @@ void retro_init(void)
     // the performance level is guide to frontend to give an idea of how intensive this core is to run
     environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
 
+    log_cb(RETRO_LOG_DEBUG, "[gba_senpai]: Initializing core....\n");
 }
 
 
@@ -110,13 +143,13 @@ void retro_get_system_av_info(struct retro_system_av_info *info) {
     int pixel_format = RETRO_PIXEL_FORMAT_RGB565;
 
     memset(info, 0, sizeof(retro_system_av_info));
-    info->timing.fps            = 50.0;
-    info->timing.sample_rate    = 44100.0;
+    info->timing.fps            = 59.73; // TODO need to verify
+    info->timing.sample_rate    = 32768; // confirmed with manual
     info->geometry.base_width   = FRAME_WIDTH;
     info->geometry.base_height  = FRAME_HEIGHT;
     info->geometry.max_width    = FRAME_WIDTH;
     info->geometry.max_height   = FRAME_HEIGHT;
-    //info->geometry.aspect_ratio = 330.0f / 410.0f;
+    info->geometry.aspect_ratio = (3.0f / 2.0f);
 
     // the performance level is guide to frontend to give an idea of how intensive this core is to run
     environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixel_format);
@@ -125,19 +158,18 @@ void retro_get_system_av_info(struct retro_system_av_info *info) {
 // Reset the Vectrex
 void retro_reset(void)
 {
-
+    log_cb(RETRO_LOG_DEBUG, "[gba_senpai]: Resetting core....\n");
 }
 
-// Test the user input and return the state of the joysticks and buttons
-void get_joystick_state(unsigned port, uint8_t &x, uint8_t &y, uint8_t &b1, uint8_t &b2, uint8_t &b3, uint8_t &b4)
-{
-
-}
 
 
 // Run a single frames with out Vectrex emulation.
 void retro_run(void)
 {
+    // 548 audio samples per fram (32.768kHz @ 59.73 fps)
+    for(int i = 0; i < 548; i++){
+        audio_cb(1, 1);
+    }
     // API requires that input_poll callback be called once
     input_poll_cb();
 }
