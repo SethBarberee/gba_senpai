@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <memory>
 
-#include "libretro.h"
+#include "libretro/libretro.h"
 
 constexpr int CYCLES_PER_FRAME = 30000;
+// TODO maybe move this elsewhere?
 const int FRAME_WIDTH = 240;
 const int FRAME_HEIGHT = 160;
 unsigned long cycles_per_frame = CYCLES_PER_FRAME;
@@ -39,7 +40,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 // Unload the cartridge
 void retro_unload_game(void) { }
 
-unsigned retro_get_region(void) { return RETRO_REGION_PAL; }
+unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
 
 // libretro unused api functions
 void retro_set_controller_port_device(unsigned port, unsigned device) {}
